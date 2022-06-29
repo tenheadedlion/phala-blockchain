@@ -10,6 +10,7 @@ GRAMINE_LOG_LEVEL = error
 USE_MUSL ?= 0
 
 BIN_NAME = pruntime
+RA_METHOD ?= epid
 
 ifeq ($(USE_MUSL),1)
 BIN_FILE = ../target/x86_64-unknown-linux-musl/release/${BIN_NAME}
@@ -49,6 +50,7 @@ ${BIN_NAME}.manifest: ${BIN_NAME}.manifest.template
 		-Dra_client_spid=${IAS_SPID} \
 		-Dseal_dir=${PRUNTIME_SEAL_DIR} \
 		-Dstorage_dir=${PRUNTIME_STORAGE_DIR} \
+		-Dra_method=${RA_METHOD} \
 		$< $@
 
 ${BIN_NAME}.manifest.sgx: ${BIN_NAME}.manifest ${BIN_FILE}
