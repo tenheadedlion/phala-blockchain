@@ -63,6 +63,8 @@ use std::future::Future;
 
 pub type TransactionResult = Result<pink::runtime::ExecSideEffects, TransactionError>;
 
+const MAX_SUPPORTED_CONSENSUS_VERSION: u32 = 0;
+
 #[derive(Encode, Decode, Debug, Clone, thiserror::Error)]
 #[error("TransactionError: {:?}", self)]
 pub enum TransactionError {
@@ -457,6 +459,9 @@ pub struct System<Platform> {
     pub(crate) block_number: BlockNumber,
     pub(crate) now_ms: u64,
     retired_versions: Vec<Condition>,
+
+    // The version flag used to coordinate the pruntime's behavior.
+    pub(crate) consensus_version: u32,
 }
 
 thread_local! {
@@ -533,6 +538,7 @@ impl<Platform: pal::Platform> System<Platform> {
             now_ms: 0,
             sidevm_spawner: create_sidevm_service(worker_threads),
             retired_versions: vec![],
+            consensus_version: 0,
         }
     }
 
@@ -817,6 +823,15 @@ impl<Platform: pal::Platform> System<Platform> {
             PRuntimeManagementEvent::RetirePRuntime(condition) => {
                 self.retired_versions.push(condition.clone());
                 self.check_retirement();
+            }
+            PRuntimeManagementEvent::SetConsensusVersion(version) => {
+                if version > MAX_SUPPORTED_CONSENSUS_VERSION {
+                    panic!(
+                        "Unsupported system consensus version {}, please upgrade the pRuntime",
+                        version
+                    );
+                }
+                self.consensus_version = version;
             }
         }
     }
